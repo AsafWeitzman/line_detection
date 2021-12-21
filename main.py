@@ -88,6 +88,20 @@ def main():
         startXs, endXs = findLines(imgEdges)
 
 
+        # asaf's test
+        startXsP, endXsP, startYsP, endYsP = findLinesP(imgEdges)
+        print("test test test test test test test test test test :")
+        print(f"startXsP : {startXsP}")
+        print("test test test test test test test test test test :")
+        print(f"startXs : {startXs}")
+        print("test test test test test test test test test test :")
+
+
+
+
+        # asaf's test
+
+
         # Filtering Detected Lines
         if startXs:
             startFiltered, endFiltered, gapStart, gapEnd = removeOutliers(startXs, endXs)
@@ -97,6 +111,13 @@ def main():
                 # for (xA, xB) in zip(startFiltered, endFiltered):
                     # cv2.line(imgResult, (xA, yBottomLarge), (xB, yTopLarge), (100, 255, 100), 2)
             cv2.line(imgResult, (gapStart, yBottomLarge), (gapEnd, yTopLarge), (255, 100, 255), 3) #(255, 100, 255)
+            cv2.line(imgResult, (gapStart, yBottomLarge), (gapEnd, yTopLarge), (22, 100, 43), 3) #(255, 100, 255)
+
+
+            # asaf's test
+            #cv2.line(imgResult, (startXsP[0], yBottomLarge), (endXsP[0], yTopLarge), (22, 100, 43), 3) #(255, 100, 255)
+            # asaf's test
+
             print("Gap Start: " + str(gapStart))
             print("Gap End: " + str(gapEnd))
             # Enter Tracking Mode Once Gap Is Found
@@ -235,6 +256,72 @@ def findLines(img):
                 foundEndXs.append(x2)
 
     return foundStartXs, foundEndXs
+
+
+def findLinesP(img):
+    foundStartXsP = []
+    foundStartYsP = []
+
+    foundEndXsP = []
+    foundEndYsP = []
+
+
+    linesP = cv2.HoughLinesP(img, 1, np.pi / 180, 50, None, 50, 10) # treshold 50
+    if linesP is None:
+        print("No Lines Found")
+        return None, None
+
+    for i in range(0, len(linesP)):
+        l = linesP[i][0]
+        x1 = l[0]
+        y1 = l[1]
+        x2 = l[2]
+        y2 = l[3]
+        foundStartXsP.append(x1)
+        foundStartYsP.append(y1)
+        foundEndXsP.append(x2)
+        foundEndYsP.append(y2)
+
+        img_withP = np.copy(img)
+
+        cv2.line(img_withP, (l[0], l[1]), (l[2], l[3]), (255, 100, 255), 3, cv2.LINE_AA)
+        cv2.imshow("img with P", img_withP)
+
+    return foundStartXsP, foundEndXsP, foundStartYsP, foundEndYsP
+
+
+def removeOutliersForP(lineS, lineE):
+    lineStart = np.array(lineS)
+    lineEnd = np.array(lineE)
+    mainStart = lineStart
+    mainEnd = lineEnd
+    if lineStart.size == 1:
+        return lineStart, lineEnd, int(mainStart), int(mainEnd)
+
+    elif lineStart.size == 2:
+        return np.mean(lineStart), np.mean(lineEnd), int(np.mean(mainStart)), int(np.mean(mainEnd))
+
+    else:
+        startStd = np.std(lineStart, axis=0)
+        startMean = np.mean(lineStart, axis=0)
+        cutOff = startStd * 1
+        startLower = startMean - cutOff
+        startUpper = startMean + cutOff
+        i = 0
+        deleteList = []
+        for x in lineStart:
+            if x < startLower or x > startUpper:
+                deleteList.append(i)
+            i += 1
+
+        startFiltered = np.delete(lineStart, deleteList)
+        endFiltered = np.delete(lineEnd, deleteList)
+        mainStart = int(np.mean(startFiltered))
+        mainEnd = int(np.mean(endFiltered))
+
+        return startFiltered, endFiltered, mainStart, mainEnd
+
+
 
 def removeOutliers(lineS, lineE):
     lineStart = np.array(lineS)
